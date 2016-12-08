@@ -10,6 +10,10 @@
 // all of them receive messages published on the topic.
 package pubsub
 
+import (
+	"fmt"
+)
+
 type operation int
 
 const (
@@ -164,7 +168,11 @@ func (reg *registry) add(topic string, ch chan interface{}, once bool) {
 
 func (reg *registry) send(topic string, msg interface{}) {
 	for ch, once := range reg.topics[topic] {
-		ch <- msg
+		select {
+		case ch <- msg:
+		default:
+			fmt.Printf("pubsub.send: DROP %s\n", topic)
+		}
 		if once {
 			for topic := range reg.revTopics[ch] {
 				reg.remove(topic, ch)
